@@ -174,8 +174,7 @@
 		<resources>
 			<resource>
 				<filtering>false</filtering>
-				<directory>${project.basedir}/src/main/resources</directory>
-				<targetPath>${project.build.directory}/assembly/conf</targetPath>
+				<directory>src/main/resources</directory>
 				<includes>
 					<include>*.properties</include>
 				</includes>

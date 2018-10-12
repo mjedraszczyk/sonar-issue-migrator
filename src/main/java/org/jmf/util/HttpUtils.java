@@ -12,10 +12,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-
-
 import javax.net.ssl.SSLContext;
-
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.http.Header;
