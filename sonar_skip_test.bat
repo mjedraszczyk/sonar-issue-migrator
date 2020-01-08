@@ -1,1 +1,0 @@
-mvn clean install sonar:sonar -Dmaven.test.skip=true

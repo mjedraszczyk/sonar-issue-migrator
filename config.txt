@@ -1,0 +1,5 @@
+--host=https://sonarqube.com
+--user=
+--password=
+--source-project=proj:master
+--target-project=proj:develop

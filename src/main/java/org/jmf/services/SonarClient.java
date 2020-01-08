@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author jose
  */
-public class SonarClientService {
+public class SonarClient {
 
   private static final String LOGIN = "api/authentication/login";
 
@@ -71,7 +71,7 @@ public class SonarClientService {
   /**
    * Constructor.
    */
-  public SonarClientService(String url) {
+  public SonarClient(String url) {
 
     this.headers = new ArrayListValuedHashMap<>();
 
@@ -144,7 +144,7 @@ public class SonarClientService {
    * @param flaggedIssues List of flagged issues
    * @param project Project name
    */
-  public final void copyIssues(List<Issue> flaggedIssues, String project) {
+  public final void copyIssuesToProject(List<Issue> flaggedIssues, String project) {
 
     final Map<String, List<Issue>> issuesByRuleMap = new HashMap<>();
     String rule;
@@ -157,7 +157,8 @@ public class SonarClientService {
     for (final Issue flaggedIssue : flaggedIssues) {
 
       counter++;
-      CONSOLE_LOGGER.info("Processing flagged issue {} of {}\r", counter, nIssues);
+      CONSOLE_LOGGER.info("Processing flagged issue {} {} of {}",
+          new Object[]{flaggedIssue.getParsedComponent(), counter, nIssues});
 
       // search all open issues with the same rule as the flagged issue
       rule = flaggedIssue.getRule();
@@ -170,8 +171,8 @@ public class SonarClientService {
           CONSOLE_LOGGER.error("Unsupported encoding UTF-8", e);
           return;
         }
-        openIssues = getIssuesFromUrl(
-            this.baseUrl + "/" + API_SEARCH + "?rules=" + encodedRule + "&componentRoots=" + project);
+        openIssues = searchIssues(
+            this.baseUrl + "/" + API_SEARCH + "?rules=" + encodedRule + "&componentKeys=" + project);
         issuesByRuleMap.put(rule, openIssues);
       }
 
@@ -186,7 +187,7 @@ public class SonarClientService {
       }
     }
 
-    CONSOLE_LOGGER.info("\n{} flagged issues matched.", nMatched);
+    CONSOLE_LOGGER.info("{} flagged issues matched.", nMatched);
   }
 
   /**
@@ -220,7 +221,7 @@ public class SonarClientService {
 //                else if (CONFIRMED.equals(flaggedStatus)) {
 //                    params.put(TRANSITION, "confirm");
 //                }
-    }
+      }
 
       if (params.size() == 2) {
         // Launch url
@@ -239,6 +240,10 @@ public class SonarClientService {
     return false;
   }
 
+  public final List<Issue> getIssuesFromProject(String projectKey) {
+    return searchIssues(this.baseUrl + "/" + API_SEARCH + "?resolved=true&componentKeys=" + projectKey);
+  }
+
   /**
    * Get list of issues from URL.
    *
@@ -247,7 +252,7 @@ public class SonarClientService {
    * @throws JsonParseException JSON Exception
    * @throws IOException IO Exception
    */
-  public final List<Issue> getIssuesFromUrl(String url) {
+  public final List<Issue> searchIssues(String url) {
     // Initialize JSON mappers
     final ObjectMapper mapper = new ObjectMapper();
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

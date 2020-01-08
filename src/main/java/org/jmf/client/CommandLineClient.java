@@ -1,76 +1,102 @@
 package org.jmf.client;
 
-import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
-import org.apache.log4j.PropertyConfigurator;
-import org.jmf.services.SonarClientService;
-import org.jmf.util.FileUtils;
+import java.util.concurrent.Callable;
+import org.apache.commons.lang3.StringUtils;
+import org.jmf.services.SonarClient;
 import org.jmf.vo.Issue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 /**
  * @author jose
  */
-public final class CommandLineClient {
+@Command()
+public final class CommandLineClient implements Callable<Integer> {
 
-  // Logger
-  private static final Logger CONSOLE_LOGGER = LoggerFactory.getLogger("console");
+  private static final Logger LOGGER = LoggerFactory.getLogger("Sonar Issue Migrator");
+
+  @Option(names = {"-h", "--host"}, description = "Sonar host", required = true)
+  private String host;
+  @Option(names = {"-u", "--user"}, description = "Sonar user", required = true)
+  private String user;
+  @Option(names = {"-p", "--password"}, description = "Sonar password", required = true)
+  private String password;
+  @Option(names = {"-s", "--source-project"}, description = "Source project", required = true)
+  private String sourceProject;
+  @Option(names = {"-t", "--target-project"}, description = "Target project", required = true)
+  private String targetProject;
+  @Option(names = {"-H", "--target-host"}, description = "Sonar host")
+  private String targetHost;
+  @Option(names = {"-U", "--target-user"}, description = "Sonar user")
+  private String targetUser;
+  @Option(names = {"-P", "--target-password"}, description = "Sonar password")
+  private String targetPassword;
+  @Option(names = {"--basic-auth-user"}, description = "Sonar user")
+  private String basicAuthUser;
+  @Option(names = {"--basic-auth-password"}, description = "Sonar password")
+  private String basicAuthPassword;
+  @Option(names = {"--target-basic-auth-user"}, description = "Sonar user")
+  private String targetBasicAuthUser;
+  @Option(names = {"--target-basic-auth-password"}, description = "Sonar password")
+  private String targetBasicAuthPassword;
 
   private CommandLineClient() {
   }
 
   public static void main(final String... args) {
+    int exitCode = new CommandLine(new CommandLineClient()).execute(args);
+    System.exit(exitCode);
+  }
 
-    InputStream log4jConfigStream = CommandLineClient.class.getClassLoader().getResourceAsStream("log4j.properties");
-    PropertyConfigurator.configure(log4jConfigStream);
-
-    // Get map with properties
-    Map<String, String> props = FileUtils.getProperties("configuration-develop.properties");
+  @Override
+  public Integer call() {
+    targetHost = StringUtils.defaultString(targetHost, host);
+    targetUser = StringUtils.defaultString(targetUser, user);
+    targetPassword = StringUtils.defaultString(targetPassword, password);
+    if (StringUtils.equals(host, targetHost)) {
+      targetBasicAuthUser = StringUtils.defaultString(targetBasicAuthUser, basicAuthUser);
+      targetBasicAuthPassword = StringUtils.defaultString(targetBasicAuthPassword, basicAuthPassword);
+    }
 
     List<Issue> flaggedIssues;
 
     // Create Sonar Client for flagged issues server
-    SonarClientService sClientFlagged = new SonarClientService(props.get("flagged_issues_url"));
-
-    if (sClientFlagged.getBaseUrl() == null) {
-      CONSOLE_LOGGER
-          .info("No URL found in configuration file for 'flagged' issues server (empty or malformed URL?). Exiting.");
-      return;
+    SonarClient sourceSonar = new SonarClient(host);
+    if (sourceSonar.getBaseUrl() == null) {
+      LOGGER.info("No URL found in configuration file for 'flagged' issues server (empty or malformed URL?). Exiting.");
+      return 1;
     }
 
     // Try to authenticate and get list of issues from server
-    CONSOLE_LOGGER.info("Authenticating...\n");
-    if (sClientFlagged.authenticate(props.get("flagged_http_user"), props.get("flagged_http_passw"),
-        props.get("flagged_sonar_user"), props.get("flagged_sonar_passw"))) {
-      CONSOLE_LOGGER.info("Getting list of flagged issues...\n");
-      flaggedIssues = sClientFlagged.getIssuesFromUrl(props.get("flagged_issues_url"));
+    LOGGER.info("Authenticating...\n");
+    if (sourceSonar.authenticate(basicAuthUser, basicAuthPassword, user, password)) {
+      LOGGER.info("Getting list of flagged issues...\n");
+      flaggedIssues = sourceSonar.getIssuesFromProject(sourceProject);
     } else {
-      CONSOLE_LOGGER.info("Authentication failed. Please check credentials in configuration file.\n");
-      return;
+      LOGGER.info("Authentication failed. Please check credentials in configuration file.\n");
+      return 1;
     }
 
     // If we have obtained a list of flagged issues...
     if (flaggedIssues != null && !flaggedIssues.isEmpty()) {
-      CONSOLE_LOGGER.info("Flagged issues list size: {}\n ", flaggedIssues.size());
+      LOGGER.info("Flagged issues list size: {}\n ", flaggedIssues.size());
       // Create Sonar Client for open issues
-      SonarClientService sClientOpen = new SonarClientService(props.get("open_issues_host"));
+      SonarClient targetSonar = new SonarClient(targetHost);
 
-      if (sClientOpen.getBaseUrl() == null) {
-        CONSOLE_LOGGER
-            .info("No URL found in configuration file for open issues server (empty or malformed URL?). Exiting.");
-        return;
+      if (targetSonar.getBaseUrl() == null) {
+        LOGGER.info("No URL found in configuration file for open issues server (empty or malformed URL?). Exiting.");
+        return 1;
       }
 
-      if (sClientOpen
-          .authenticate(props.get("open_sonar_user"), props.get("open_sonar_passw"), props.get("open_sonar_user"),
-              props.get("open_sonar_passw"))) {
+      if (targetSonar.authenticate(targetBasicAuthUser, targetBasicAuthPassword, targetUser, targetPassword)) {
         // Copy issues to project
-        sClientOpen.copyIssues(flaggedIssues, props.get("open_issues_project"));
+        targetSonar.copyIssuesToProject(flaggedIssues, targetProject);
       }
     }
-
+    return 0;
   }
-
 }
