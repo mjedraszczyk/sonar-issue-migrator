@@ -1,6 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
+    id("pl.allegro.tech.build.axion-release") version "1.10.3"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     java
     maven
@@ -33,3 +34,13 @@ tasks {
         dependsOn(shadowJar)
     }
 }
+
+scmVersion {
+    useHighestVersion = true
+    ignoreUncommittedChanges = false
+    tag(closureOf<TagNameSerializationConfig> {
+        prefix = "sim"
+    })
+}
+
+project.version = scmVersion.version
