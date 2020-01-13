@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import pl.allegro.tech.build.axion.release.domain.TagNameSerializationConfig
 
 plugins {
     id("pl.allegro.tech.build.axion-release") version "1.10.3"
