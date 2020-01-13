@@ -1,3 +1,6 @@
+[![Gradle Status](https://gradleupdate.appspot.com/Cognifide/gradle-aem-plugin/status.svg?random=123)](https://gradleupdate.appspot.com/Cognifide/gradle-aem-plugin/status)
+[![Apache License, Version 2.0, January 2004](docs/apache-license-badge.svg)](http://www.apache.org/licenses/)
+
 # Introduction
 
 Command-line tool to copy issue features (status, resolution) from one SonarQube project to another. 
@@ -30,31 +33,18 @@ That is what this tool is for.
 
 JRE 8
 
-# Compilation
-
-```sh
-$ mvn clean install
-```
-
-A deliverable zip will be generated in target folder.
-
 # Installation
 
-1. Donwload (TODO: link) o create deliverable zip following previous instructions.
-2. Unzip "sonar-issue-migrator-bin.zip" to a directory.
-
-# Usage
-
-Steps to copy issues from Project_A to Project_B:
-
-1. Run SonarQube analysis on Project_A:branch_A (note: using Sonar branches is optional) 
-2. Run SonarQube analysis on Project_B:branch_B (note: using Sonar branches is optional). **IMPORTANT: source code of Project_A and Project_B should be as similar as possible to each other**.
-3. Edit *conf/configuration.properties* (please read comments in *configuration.properties* file).  
-4. Navigate to folder where you have unzipped "sonar-issue-migrator-bin.zip". It should contain *SonarIssueMigrator.jar*. Execute:
+1. Download sonar-issue-migrator-all.jar
+2. Run command:
 ```sh
-$ java -jar SonarIssueMigrator.jar
+$ java -jar sonar-issue-migrator-all.jar --host=https://sonarqube.com \
+                                         --user=user \
+                                         --password=pa$$word \
+                                         --source-project=proj:master \
+                                         --target-project=proj:develop
 ```
-5. Program will start running. Once execution is done, it will show:
+3. Program will start running. Once execution is done, it will show:
 
 - Total number of flagged issues obtained from URL (*flagged_issues_url* parameter in config file)
 - Number of matched issues: how many open issues have been found in destination project ('Project_B') matching the flagged ones. The tool compares issues based on <Component, Rule, Line> triad. 
